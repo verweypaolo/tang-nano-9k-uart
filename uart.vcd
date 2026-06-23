@@ -1,5 +1,5 @@
 $date
-	Thu Jun 18 15:28:22 2026
+	Tue Jun 23 18:01:47 2026
 $end
 $version
 	Icarus Verilog
@@ -20,43 +20,69 @@ $var wire 1 % uart_rx $end
 $var wire 1 ! uart_tx $end
 $var parameter 8 & DELAY_FRAMES $end
 $var parameter 32 ' HALF_DELAY_WAIT $end
-$var parameter 32 ( RX_STATE_IDLE $end
-$var parameter 32 ) RX_STATE_READ $end
-$var parameter 32 * RX_STATE_READ_WAIT $end
-$var parameter 32 + RX_STATE_START_BIT $end
-$var parameter 32 , RX_STATE_STOP_BIT $end
-$var reg 1 - byteReady $end
-$var reg 8 . dataIn [7:0] $end
-$var reg 6 / led [5:0] $end
-$var reg 3 0 rxBitNumber [2:0] $end
-$var reg 13 1 rxCounter [12:0] $end
-$var reg 4 2 rxState [3:0] $end
+$var parameter 32 ( MEMORY_LENGTH $end
+$var parameter 32 ) RX_STATE_IDLE $end
+$var parameter 32 * RX_STATE_READ $end
+$var parameter 32 + RX_STATE_READ_WAIT $end
+$var parameter 32 , RX_STATE_START_BIT $end
+$var parameter 32 - RX_STATE_STOP_BIT $end
+$var parameter 32 . TX_STATE_DEBOUNCE $end
+$var parameter 32 / TX_STATE_IDLE $end
+$var parameter 32 0 TX_STATE_START_BIT $end
+$var parameter 32 1 TX_STATE_STOP_BIT $end
+$var parameter 32 2 TX_STATE_WRITE $end
+$var reg 1 3 byteReady $end
+$var reg 8 4 dataIn [7:0] $end
+$var reg 8 5 dataOut [7:0] $end
+$var reg 1 6 frameError $end
+$var reg 6 7 led [5:0] $end
+$var reg 3 8 rxBitNumber [2:0] $end
+$var reg 13 9 rxCounter [12:0] $end
+$var reg 4 : rxState [3:0] $end
+$var reg 3 ; txBitNumber [2:0] $end
+$var reg 4 < txByteCounter [3:0] $end
+$var reg 25 = txCounter [24:0] $end
+$var reg 1 > txPinRegister $end
+$var reg 4 ? txState [3:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
 $comment Show the parameter values. $end
 $dumpall
-b101 ,
-b1 +
-b10 *
-b11 )
-b0 (
+b10 2
+b11 1
+b1 0
+b0 /
+b100 .
+b101 -
+b1 ,
+b10 +
+b11 *
+b0 )
+b1100 (
 b100 '
 b1000 &
 $end
 #0
 $dumpvars
-b0 2
-b0 1
-b0 0
-bx /
-b0 .
-0-
+b0 ?
+1>
+b0 =
+b0 <
+b0 ;
+b0 :
+b0 9
+b0 8
+bx 7
+06
+b0 5
+b0 4
+03
 1%
 0$
 1#
 bx "
-z!
+1!
 $end
 #1
 1$
@@ -80,429 +106,429 @@ $end
 0$
 0%
 #11
-b1 1
-b1 2
+b1 9
+b1 :
 1$
 #12
 0$
 #13
-b10 1
+b10 9
 1$
 #14
 0$
 #15
-b11 1
+b11 9
 1$
 #16
 0$
 #17
-b100 1
+b100 9
 1$
 #18
 0$
 #19
-b1 1
-b10 2
+b1 9
+b10 :
 1$
 #20
 0$
 #21
-b10 1
+b10 9
 1$
 #22
 0$
 #23
-b11 1
+b11 9
 1$
 #24
 0$
 #25
-b100 1
+b100 9
 1$
 #26
 0$
 1%
 #27
-b101 1
+b101 9
 1$
 #28
 0$
 #29
-b110 1
+b110 9
 1$
 #30
 0$
 #31
-b111 1
+b111 9
 1$
 #32
 0$
 #33
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #34
 0$
 #35
-b10 2
-b1 0
-b10000000 .
-b1 1
+b10 :
+b1 8
+b10000000 4
+b1 9
 1$
 #36
 0$
 #37
-b10 1
+b10 9
 1$
 #38
 0$
 #39
-b11 1
+b11 9
 1$
 #40
 0$
 #41
-b100 1
+b100 9
 1$
 #42
 0$
 0%
 #43
-b101 1
+b101 9
 1$
 #44
 0$
 #45
-b110 1
+b110 9
 1$
 #46
 0$
 #47
-b111 1
+b111 9
 1$
 #48
 0$
 #49
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #50
 0$
 #51
-b10 2
-b10 0
-b1000000 .
-b1 1
+b10 :
+b10 8
+b1000000 4
+b1 9
 1$
 #52
 0$
 #53
-b10 1
+b10 9
 1$
 #54
 0$
 #55
-b11 1
+b11 9
 1$
 #56
 0$
 #57
-b100 1
+b100 9
 1$
 #58
 0$
 #59
-b101 1
+b101 9
 1$
 #60
 0$
 #61
-b110 1
+b110 9
 1$
 #62
 0$
 #63
-b111 1
+b111 9
 1$
 #64
 0$
 #65
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #66
 0$
 #67
-b10 2
-b11 0
-b100000 .
-b1 1
+b10 :
+b11 8
+b100000 4
+b1 9
 1$
 #68
 0$
 #69
-b10 1
+b10 9
 1$
 #70
 0$
 #71
-b11 1
+b11 9
 1$
 #72
 0$
 #73
-b100 1
+b100 9
 1$
 #74
 0$
 #75
-b101 1
+b101 9
 1$
 #76
 0$
 #77
-b110 1
+b110 9
 1$
 #78
 0$
 #79
-b111 1
+b111 9
 1$
 #80
 0$
 #81
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #82
 0$
 #83
-b10 2
-b100 0
-b10000 .
-b1 1
+b10 :
+b100 8
+b10000 4
+b1 9
 1$
 #84
 0$
 #85
-b10 1
+b10 9
 1$
 #86
 0$
 #87
-b11 1
+b11 9
 1$
 #88
 0$
 #89
-b100 1
+b100 9
 1$
 #90
 0$
 #91
-b101 1
+b101 9
 1$
 #92
 0$
 #93
-b110 1
+b110 9
 1$
 #94
 0$
 #95
-b111 1
+b111 9
 1$
 #96
 0$
 #97
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #98
 0$
 #99
-b10 2
-b101 0
-b1000 .
-b1 1
+b10 :
+b101 8
+b1000 4
+b1 9
 1$
 #100
 0$
 #101
-b10 1
+b10 9
 1$
 #102
 0$
 #103
-b11 1
+b11 9
 1$
 #104
 0$
 #105
-b100 1
+b100 9
 1$
 #106
 0$
 1%
 #107
-b101 1
+b101 9
 1$
 #108
 0$
 #109
-b110 1
+b110 9
 1$
 #110
 0$
 #111
-b111 1
+b111 9
 1$
 #112
 0$
 #113
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #114
 0$
 #115
-b10 2
-b110 0
-b10000100 .
-b1 1
+b10 :
+b110 8
+b10000100 4
+b1 9
 1$
 #116
 0$
 #117
-b10 1
+b10 9
 1$
 #118
 0$
 #119
-b11 1
+b11 9
 1$
 #120
 0$
 #121
-b100 1
+b100 9
 1$
 #122
 0$
 #123
-b101 1
+b101 9
 1$
 #124
 0$
 #125
-b110 1
+b110 9
 1$
 #126
 0$
 #127
-b111 1
+b111 9
 1$
 #128
 0$
 #129
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #130
 0$
 #131
-b10 2
-b111 0
-b11000010 .
-b1 1
+b10 :
+b111 8
+b11000010 4
+b1 9
 1$
 #132
 0$
 #133
-b10 1
+b10 9
 1$
 #134
 0$
 #135
-b11 1
+b11 9
 1$
 #136
 0$
 #137
-b100 1
+b100 9
 1$
 #138
 0$
 0%
 #139
-b101 1
+b101 9
 1$
 #140
 0$
 #141
-b110 1
+b110 9
 1$
 #142
 0$
 #143
-b111 1
+b111 9
 1$
 #144
 0$
 #145
-b11 2
-b1000 1
+b11 :
+b1000 9
 1$
 #146
 0$
 #147
-b101 2
-b0 0
-b1100001 .
-b1 1
+b101 :
+b0 8
+b1100001 4
+b1 9
 1$
 #148
 0$
 #149
-b10 1
+b10 9
 1$
 #150
 0$
 #151
-b11 1
+b11 9
 1$
 #152
 0$
 #153
-b100 1
+b100 9
 1$
 #154
 0$
 1%
 #155
-b101 1
+b101 9
 1$
 #156
 0$
 #157
-b110 1
+b110 9
 1$
 #158
 0$
 #159
-b111 1
+b111 9
 1$
 #160
 0$
 #161
-1-
-b0 2
-b0 1
+b0 :
+13
+b0 9
 1$
 #162
 0$
 #163
 b11110 "
-b11110 /
+b11110 7
 1$
 #164
 0$

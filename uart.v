@@ -62,13 +62,11 @@ always @(posedge clk) begin
             else
                 rxState <= RX_STATE_READ_WAIT; // if not, start waiting for next bit (e.g. time the next reading)
         end
-        RX_STATE_STOP_BIT: begin // note no framing error detection (it's not actually checking the stop bit!)
+        RX_STATE_STOP_BIT: begin 
             rxCounter <= rxCounter + 1;
-            if ((rxCounter + 1) == HALF_DELAY_WAIT) begin
+            if ((rxCounter + 1) == DELAY_FRAMES) begin // read ends in middle of frame, so wait one full frame to land in next middle
                 frameError <= (uart_rx != 1); // if stop bit not 1, assert
                 byteReady <= (uart_rx == 1); // if stop bit 1 (correct), assert (otherwise byte is corrupt and not ready)
-            end
-            if ((rxCounter + 1) == HALF_DELAY_WAIT) begin
                 rxState <= RX_STATE_IDLE; // after full frame: move back to idle
                 rxCounter <= 0;
             end
