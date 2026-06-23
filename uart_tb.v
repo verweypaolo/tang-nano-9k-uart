@@ -28,7 +28,6 @@ initial begin
     #16 uart_rx=1;
     #16 uart_rx=1;
     #16 uart_rx=0;
-    #16 uart_rx=1; // stop
   #1000 $finish;
 end
 
