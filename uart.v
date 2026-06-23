@@ -20,6 +20,7 @@ reg [12:0] rxCounter = 0; // count clock cycles
 reg [2:0] rxBitNumber = 0; // track which bit we are reading/have read
 reg [7:0] dataIn = 0; // store read-in data bits
 reg byteReady = 0; // flag when reading in of data is finished, and dataIn can be used for other things
+reg frameError = 0; // flag missing stop bit (warning because never read: read later)
 
 // state machine states
 localparam RX_STATE_IDLE = 0;
@@ -36,6 +37,7 @@ always @(posedge clk) begin
                 rxCounter <= 1;
                 rxBitNumber <= 0;
                 byteReady <= 0; // reset counter, bitnumber, byteready and move to start bit state
+                frameError <= 0; // reset possible frameError flag
             end
         end
         RX_STATE_START_BIT: begin
@@ -62,10 +64,13 @@ always @(posedge clk) begin
         end
         RX_STATE_STOP_BIT: begin // note no framing error detection (it's not actually checking the stop bit!)
             rxCounter <= rxCounter + 1;
-            if ((rxCounter + 1) == DELAY_FRAMES) begin
-                rxState <= RX_STATE_IDLE; // if we've waited a full frame. move back to idle
+            if ((rxCounter + 1) == HALF_DELAY_WAIT) begin
+                frameError <= (uart_rx != 1); // if stop bit not 1, assert
+                byteReady <= (uart_rx == 1); // if stop bit 1 (correct), assert (otherwise byte is corrupt and not ready)
+            end
+            if ((rxCounter + 1) == HALF_DELAY_WAIT) begin
+                rxState <= RX_STATE_IDLE; // after full frame: move back to idle
                 rxCounter <= 0;
-                byteReady <= 1;
             end
         end
     endcase // special for case!
