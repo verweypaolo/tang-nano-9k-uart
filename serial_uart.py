@@ -10,6 +10,7 @@ ser = serial.Serial(
 
 ser.write(bytes([0b00000001]))
 time.sleep(0.5)
+ser.reset_input_buffer() 
 
 test_bytes = [0x41, 0x42, 0x43]  # 'A', 'B', 'C'
 
