@@ -92,6 +92,7 @@ reg [2:0] txBitNumber = 0;
 reg [3:0] txByteCounter = 0; // track current byte we're sending (there's 12 bytes in the testMemory, so need to track)
 
 reg txEchoMode = 0;
+reg byteConsumed = 0;//start 1??
 
 assign uart_tx = txPinRegister;
 
@@ -126,6 +127,9 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
+    if (byteReady && !byteReadyPrev) begin
+        byteConsumed <= 0;
+    end
     case (txState)
         TX_STATE_IDLE: begin
             if (btn1 == 0) begin
@@ -134,7 +138,8 @@ always @(posedge clk) begin
                 txCounter <= 0;
                 txByteCounter <= 0;
             end
-            else if (byteReady && !byteReadyPrev) begin
+            else if (byteReady && !byteConsumed) begin
+                byteConsumed <= 1;
                 txEchoMode <= 1;
                 txState <= TX_STATE_START_BIT;
                 dataOut <= dataIn;
