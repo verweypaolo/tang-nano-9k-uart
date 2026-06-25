@@ -58,7 +58,7 @@ always @(posedge clk) begin
             dataIn <= {uart_rx, dataIn[7:1]}; // shift one databit in, concat uart_rx as MSB with top 7 bits in 8 bit dataIn! (shift register)
             rxBitNumber <= rxBitNumber + 1; // track which bit we are reading
             if (rxBitNumber == 3'b111)
-                rxState <= RX_STATE_STOP_BIT;  // if bitnumber = 8 move to stop bit stait
+                rxState <= RX_STATE_STOP_BIT;  // if bitnumber = 8 move to stop bit state
             else
                 rxState <= RX_STATE_READ_WAIT; // if not, start waiting for next bit (e.g. time the next reading)
         end
@@ -82,7 +82,7 @@ always @(posedge clk) begin
 end
 
 
-// receiving
+// transmitting
 
 reg [3:0] txState = 0;
 reg [24:0] txCounter = 0;
@@ -91,6 +91,8 @@ reg txPinRegister = 1; // stores current transmission value
 reg [2:0] txBitNumber = 0;
 reg [3:0] txByteCounter = 0; // track current byte we're sending (there's 12 bytes in the testMemory, so need to track)
 
+reg txEchoMode = 0;
+
 assign uart_tx = txPinRegister;
 
 localparam MEMORY_LENGTH = 12;
@@ -98,18 +100,18 @@ reg [7:0] testMemory [MEMORY_LENGTH-1:0]; // create 12 separate 8 bit registers!
 
 // set memory
 initial begin
-    testMemory[0] = "Y";
-    testMemory[1] = "o";
-    testMemory[2] = "u";
+    testMemory[0] = "H";
+    testMemory[1] = "e";
+    testMemory[2] = "y";
     testMemory[3] = " ";
-    testMemory[4] = "a";
-    testMemory[5] = "r";
+    testMemory[4] = "t";
+    testMemory[5] = "h";
     testMemory[6] = "e";
-    testMemory[7] = " ";
-    testMemory[8] = "t";
-    testMemory[9] = "i";
-    testMemory[10] = "n";
-    testMemory[11] = "y";
+    testMemory[7] = "r";
+    testMemory[8] = "e";
+    testMemory[9] = "!";
+    testMemory[10] = "!";
+    testMemory[11] = "!";
 end
 
 localparam TX_STATE_IDLE = 0;
@@ -118,13 +120,25 @@ localparam TX_STATE_WRITE = 2;
 localparam TX_STATE_STOP_BIT = 3;
 localparam TX_STATE_DEBOUNCE = 4; // debounce button
 
+reg byteReadyPrev = 0;
+always @(posedge clk) begin
+    byteReadyPrev <= byteReady; // load value of byte ready in current clock cycle into byteReadyPrev: edge detection
+end
+
 always @(posedge clk) begin
     case (txState)
         TX_STATE_IDLE: begin
             if (btn1 == 0) begin
+                txEchoMode <= 0;
                 txState <= TX_STATE_START_BIT;
                 txCounter <= 0;
                 txByteCounter <= 0;
+            end
+            else if (byteReady && !byteReadyPrev) begin
+                txEchoMode <= 1;
+                txState <= TX_STATE_START_BIT;
+                dataOut <= dataIn;
+                txCounter <= 0;
             end
             else begin
                 txPinRegister <= 1; // keep line high if not transmitting
@@ -134,7 +148,9 @@ always @(posedge clk) begin
             txPinRegister <= 0; // move line low to signal start of transmission (start bit)
             if ((txCounter + 1) == DELAY_FRAMES) begin // switch to transmit after a delay_frames period
                 txState <= TX_STATE_WRITE;
-                dataOut <= testMemory[txByteCounter]; // set dataOUt to appropriate byte of memory
+                if (!txEchoMode) begin
+                    dataOut <= testMemory[txByteCounter]; // set dataOUt to appropriate byte of memory
+                end // else dataIn in dataOut
                 txBitNumber <= 0;
                 txCounter <= 0;
             end
@@ -160,7 +176,11 @@ always @(posedge clk) begin
         TX_STATE_STOP_BIT: begin
             txPinRegister <= 1; // already waited in previous state so can instantly transmit stop bit
             if ((txCounter + 1) == DELAY_FRAMES) begin
-                if (txByteCounter == MEMORY_LENGTH - 1) begin
+                if (txEchoMode) begin
+                    txEchoMode <= 0;
+                    txState <= TX_STATE_IDLE; // no need to debounce when mirroring
+                end
+                else if (txByteCounter == MEMORY_LENGTH - 1) begin
                     txState <= TX_STATE_DEBOUNCE;
                 end else begin
                     txByteCounter <= txByteCounter + 1; // next byte
