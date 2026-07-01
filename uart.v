@@ -21,12 +21,14 @@ reg [2:0] rxBitNumber = 0; // track which bit we are reading/have read
 reg [7:0] dataIn = 0; // store read-in data bits
 reg byteReady = 0; // flag when reading in of data is finished, and dataIn can be used for other things
 reg frameError = 0; // flag missing stop bit (warning because never read: read later)
+reg parityError = 0;
 
 // state machine states
 localparam RX_STATE_IDLE = 0;
 localparam RX_STATE_START_BIT = 1;
 localparam RX_STATE_READ_WAIT = 2;
 localparam RX_STATE_READ = 3;
+localparam RX_STATE_PARITY_BIT = 4;
 localparam RX_STATE_STOP_BIT = 5;
 
 always @(posedge clk) begin
@@ -58,9 +60,17 @@ always @(posedge clk) begin
             dataIn <= {uart_rx, dataIn[7:1]}; // shift one databit in, concat uart_rx as MSB with top 7 bits in 8 bit dataIn! (shift register)
             rxBitNumber <= rxBitNumber + 1; // track which bit we are reading
             if (rxBitNumber == 3'b111)
-                rxState <= RX_STATE_STOP_BIT;  // if bitnumber = 8 move to stop bit state
+                rxState <= RX_STATE_PARITY_BIT;  // if bitnumber = 8 move to parity bit state
             else
                 rxState <= RX_STATE_READ_WAIT; // if not, start waiting for next bit (e.g. time the next reading)
+        end
+        RX_STATE_PARITY_BIT: begin
+            rxCounter <= rxCounter + 1;
+            if ((rxCounter + 1) == DELAY_FRAMES) begin
+                parityError <= ^{dataIn, uart_rx}; // for even parity check: xor everything, if even this is 0 (no error), else 1 (error)
+                rxState <= RX_STATE_STOP_BIT;
+                rxCounter <= 0;
+            end
         end
         RX_STATE_STOP_BIT: begin 
             rxCounter <= rxCounter + 1;
