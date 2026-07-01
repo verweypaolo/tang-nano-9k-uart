@@ -128,8 +128,9 @@ end
 localparam TX_STATE_IDLE = 0;
 localparam TX_STATE_START_BIT = 1;
 localparam TX_STATE_WRITE = 2;
-localparam TX_STATE_STOP_BIT = 3;
-localparam TX_STATE_DEBOUNCE = 4; // debounce button
+localparam TX_STATE_PARITY_BIT = 3;
+localparam TX_STATE_STOP_BIT = 4;
+localparam TX_STATE_DEBOUNCE = 5; // debounce button
 
 reg byteReadyPrev = 0;
 always @(posedge clk) begin
@@ -177,12 +178,22 @@ always @(posedge clk) begin
             txPinRegister <= dataOut[txBitNumber]; // output appropriate bit of appropriate byte
             if ((txCounter + 1) == DELAY_FRAMES) begin // another delay frames after start bit state, to wait after the start bit signal
                 if (txBitNumber == 3'b111) begin
-                    txState <= TX_STATE_STOP_BIT;
+                    txState <= TX_STATE_PARITY_BIT;
                 end else begin
                     txState <= TX_STATE_WRITE;
                     txBitNumber <= txBitNumber + 1; // write next bit, but only move to this state after delay!
                 end
                 txCounter <=0;
+            end
+            else begin
+                txCounter <= txCounter + 1;
+            end
+        end
+        TX_STATE_PARITY_BIT: begin
+            txPinRegister <= ^dataOut; // even parity; if uneven 1s this is 1, so adds the one bit to make total even
+            if ((txCounter + 1) == DELAY_FRAMES) begin
+                txState <= TX_STATE_STOP_BIT;
+                txCounter <= 0;
             end
             else begin
                 txCounter <= txCounter + 1;
