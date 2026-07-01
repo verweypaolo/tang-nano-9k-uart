@@ -40,6 +40,7 @@ always @(posedge clk) begin
                 rxBitNumber <= 0;
                 byteReady <= 0; // reset counter, bitnumber, byteready and move to start bit state
                 frameError <= 0; // reset possible frameError flag
+                parityError <= 0; // reset possible parityError flag
             end
         end
         RX_STATE_START_BIT: begin
@@ -76,7 +77,7 @@ always @(posedge clk) begin
             rxCounter <= rxCounter + 1;
             if ((rxCounter + 1) == DELAY_FRAMES) begin // read ends in middle of frame, so wait one full frame to land in next middle
                 frameError <= (uart_rx != 1); // if stop bit not 1, assert
-                byteReady <= (uart_rx == 1); // if stop bit 1 (correct), assert (otherwise byte is corrupt and not ready)
+                byteReady <= (uart_rx == 1) && !parityError; // assert if stop bit correct and no parityError
                 rxState <= RX_STATE_IDLE; // after full frame: move back to idle
                 rxCounter <= 0;
             end
@@ -89,6 +90,8 @@ always @(posedge clk) begin
     if (byteReady) begin
         led <= ~dataIn[5:0]; // negate as common anode
     end
+    led[5] <= ~frameError;
+    led[6] <= ~parityError;
 end
 
 
@@ -102,7 +105,7 @@ reg [2:0] txBitNumber = 0;
 reg [3:0] txByteCounter = 0; // track current byte we're sending (there's 12 bytes in the testMemory, so need to track)
 
 reg txEchoMode = 0;
-reg byteConsumed = 0;//start 1??
+reg byteConsumed = 0;
 
 assign uart_tx = txPinRegister;
 
