@@ -69,6 +69,19 @@ Output: h, e, l, l   (all bytes echoed in order)
 
 ---
 
+### 3. Parity bit (configurable odd/even)
+
+Both RX and TX now include a parity bit between the 8 data bits and the stop bit, adding basic single-bit error detection on top of the framing check from feature 1.
+
+Parity polarity is set via the `PARITY_ODD` module parameter (`0` = even parity, `1` = odd parity), defaulting to even. Being a parameter rather than a hardcoded value, it can be overridden by whichever module instantiates `uart` without touching `uart.v` itself.
+
+- **RX**: a new `RX_STATE_PARITY_BIT` state sits between `RX_STATE_READ` and `RX_STATE_STOP_BIT`. It samples `uart_rx` at the bit's midpoint (the same stable-centre timing used for data bits) and computes `parityError <= ^{dataIn, uart_rx} ^ PARITY_ODD` — XOR-reducing the received byte together with the parity bit, then flipping the result if odd parity is configured, so `parityError` goes high whenever the received parity doesn't match what's expected. `byteReady` is only asserted if the stop bit is valid **and** `parityError` is clear. Like `frameError`, `parityError` is cleared when a new start bit is detected.
+- **TX**: a new `TX_STATE_PARITY_BIT` state sits between `TX_STATE_WRITE` and `TX_STATE_STOP_BIT`. It drives `uart_tx` with `^dataOut ^ PARITY_ODD`, computing the correct parity bit for whatever byte is being sent, whether from `testMemory` or echoed back via `dataIn`.
+
+> **Note**: `parityError` only suppresses `byteReady` for that byte — it doesn't affect framing detection or recovery, and the receiver returns to `RX_STATE_IDLE` normally to await the next byte.
+
+---
+
 ## Testbench
 
 `uart_tb.v` provides simulation-based verification without requiring the board. It overrides `DELAY_FRAMES` to `8` (instead of `234`) so a full byte frame takes only 16 simulation time units, making waveforms easy to inspect. The testbench drives a synthetic byte stream into `uart_rx` and dumps a VCD file.

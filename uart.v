@@ -2,7 +2,8 @@
 
 module uart
 #(
-    parameter DELAY_FRAMES = 234 // 27,000,000 (27Mhz) / 115,200 Baud rate
+    parameter DELAY_FRAMES = 234, // 27,000,000 (27Mhz) / 115,200 Baud rate
+    parameter PARITY_ODD = 0 // to set parity odd or even
     // such parameters can be changed by files that use this module! "local param configurable from outside"
 )
 (
@@ -68,7 +69,7 @@ always @(posedge clk) begin
         RX_STATE_PARITY_BIT: begin
             rxCounter <= rxCounter + 1;
             if ((rxCounter + 1) == DELAY_FRAMES) begin
-                parityError <= ^{dataIn, uart_rx}; // for even parity check: xor everything, if even this is 0 (no error), else 1 (error)
+                parityError <= ^{dataIn, uart_rx} ^ PARITY_ODD; // for even parity check: xor everything, if even this is 0 (no error), else 1 (error)
                 rxState <= RX_STATE_STOP_BIT;
                 rxCounter <= 0;
             end
@@ -193,7 +194,7 @@ always @(posedge clk) begin
             end
         end
         TX_STATE_PARITY_BIT: begin
-            txPinRegister <= ^dataOut; // even parity; if uneven 1s this is 1, so adds the one bit to make total even
+            txPinRegister <= ^dataOut ^ PARITY_ODD; // even parity; if uneven 1s this is 1, so adds the one bit to make total even
             if ((txCounter + 1) == DELAY_FRAMES) begin
                 txState <= TX_STATE_STOP_BIT;
                 txCounter <= 0;
