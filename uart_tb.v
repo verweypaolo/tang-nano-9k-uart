@@ -19,16 +19,18 @@ always
 initial begin
     $display("Starting UART RX");
     $monitor("LED Value %b", led);
-    #10 uart_rx=0; // start, delay 10 time frames
-    #16 uart_rx=1; // delay 16 time frames, 8 clock cycles matches 8'd8
-    #16 uart_rx=0;
-    #16 uart_rx=0;
-    #16 uart_rx=0;
-    #16 uart_rx=0;
-    #16 uart_rx=1;
-    #16 uart_rx=1;
-    #16 uart_rx=0;
-  #1000 $finish;
+    #10 uart_rx=0; // start bit
+    #16 uart_rx=1; // D0
+    #16 uart_rx=0; // D1
+    #16 uart_rx=0; // D2
+    #16 uart_rx=0; // D3
+    #16 uart_rx=0; // D4
+    #16 uart_rx=1; // D5
+    #16 uart_rx=1; // D6
+    #16 uart_rx=0; // D7  
+    #16 uart_rx=1; // parity 
+    #16 uart_rx=1; // stop bit 
+    #1000 $finish;
 end
 
 initial begin
