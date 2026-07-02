@@ -2,7 +2,9 @@
 
 module uart
 #(
-    parameter DELAY_FRAMES = 234, // 27,000,000 (27Mhz) / 115,200 Baud rate
+    parameter ACC_INCREMENT = 3,
+    parameter ACC_MODULUS = 8,
+    parameter BAUD_DIVISOR = 234,
     parameter PARITY_ODD = 0 // to set parity odd or even
     // such parameters can be changed by files that use this module! "local param configurable from outside"
 )
@@ -14,7 +16,8 @@ module uart
     input btn1
 );
 
-localparam HALF_DELAY_WAIT = (DELAY_FRAMES / 2);
+
+localparam HALF_DELAY_WAIT = BAUD_DIVISOR / 2; // same for 234 or 235
 
 reg [3:0] rxState = 0; // track which state of receiver state machine
 reg [12:0] rxCounter = 0; // count clock cycles
@@ -23,6 +26,9 @@ reg [7:0] dataIn = 0; // store read-in data bits
 reg byteReady = 0; // flag when reading in of data is finished, and dataIn can be used for other things
 reg frameError = 0; // flag missing stop bit (warning because never read: read later)
 reg parityError = 0;
+
+reg [$clog2(ACC_MODULUS):0] rxAccumulator = 0; // $clog2 is a Verilog system function that computes the ceiling log base 2 of a value - compile time
+reg [12:0] rxDelayFrames = BAUD_DIVISOR;
 
 // state machine states
 localparam RX_STATE_IDLE = 0;
@@ -48,13 +54,22 @@ always @(posedge clk) begin
             if (rxCounter == HALF_DELAY_WAIT) begin
                 rxState <= RX_STATE_READ_WAIT;
                 rxCounter <= 1;
-            end else
+            end else begin
                 rxCounter <= rxCounter + 1; //if we've waited half a frame, start waiting another half frame for reading, else increment clock
+            end
         end
         RX_STATE_READ_WAIT: begin
             rxCounter <= rxCounter + 1;
-            if ((rxCounter + 1) == DELAY_FRAMES) begin
+            if ((rxCounter + 1) == rxDelayFrames) begin
                 rxState <= RX_STATE_READ; // check to equal delay frames because it should start counting at half delay frames (from start bit state)
+                // update accumulator
+                if ((rxAccumulator + ACC_INCREMENT) >= ACC_MODULUS) begin
+                    rxDelayFrames <= BAUD_DIVISOR + 1;
+                    rxAccumulator <= rxAccumulator + ACC_INCREMENT - ACC_MODULUS;
+                end else begin
+                    rxDelayFrames <= BAUD_DIVISOR;
+                    rxAccumulator <= rxAccumulator + ACC_INCREMENT;
+                end
             end
         end
         RX_STATE_READ: begin
@@ -68,19 +83,35 @@ always @(posedge clk) begin
         end
         RX_STATE_PARITY_BIT: begin
             rxCounter <= rxCounter + 1;
-            if ((rxCounter + 1) == DELAY_FRAMES) begin
+            if ((rxCounter + 1) == rxDelayFrames) begin
                 parityError <= ^{dataIn, uart_rx} ^ PARITY_ODD; // for even parity check: xor everything, if even this is 0 (no error), else 1 (error)
                 rxState <= RX_STATE_STOP_BIT;
                 rxCounter <= 0;
+                // update accumulator
+                if ((rxAccumulator + ACC_INCREMENT) >= ACC_MODULUS) begin
+                    rxDelayFrames <= BAUD_DIVISOR + 1;
+                    rxAccumulator <= rxAccumulator + ACC_INCREMENT - ACC_MODULUS;
+                end else begin
+                    rxDelayFrames <= BAUD_DIVISOR;
+                    rxAccumulator <= rxAccumulator + ACC_INCREMENT;
+                end
             end
         end
         RX_STATE_STOP_BIT: begin 
             rxCounter <= rxCounter + 1;
-            if ((rxCounter + 1) == DELAY_FRAMES) begin // read ends in middle of frame, so wait one full frame to land in next middle
+            if ((rxCounter + 1) == rxDelayFrames) begin // read ends in middle of frame, so wait one full frame to land in next middle
                 frameError <= (uart_rx != 1); // if stop bit not 1, assert
                 byteReady <= (uart_rx == 1) && !parityError; // assert if stop bit correct and no parityError
                 rxState <= RX_STATE_IDLE; // after full frame: move back to idle
                 rxCounter <= 0;
+                // update accumulator
+                if ((rxAccumulator + ACC_INCREMENT) >= ACC_MODULUS) begin
+                    rxDelayFrames <= BAUD_DIVISOR + 1;
+                    rxAccumulator <= rxAccumulator + ACC_INCREMENT - ACC_MODULUS;
+                end else begin
+                    rxDelayFrames <= BAUD_DIVISOR;
+                    rxAccumulator <= rxAccumulator + ACC_INCREMENT;
+                end
             end
         end
     endcase // special for case!
