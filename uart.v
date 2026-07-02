@@ -120,10 +120,10 @@ end
 // check if we have some data and light up leds
 always @(posedge clk) begin
     if (byteReady) begin
-        led <= ~dataIn[5:0]; // negate as common anode
+        led[3:0] <= ~dataIn[3:0]; // negate as common anode
     end
-    led[5] <= ~frameError;
-    led[6] <= ~parityError;
+    led[4] <= ~frameError;
+    led[5] <= ~parityError;
 end
 
 
@@ -138,6 +138,9 @@ reg [3:0] txByteCounter = 0; // track current byte we're sending (there's 12 byt
 
 reg txEchoMode = 0;
 reg byteConsumed = 0;
+
+reg [$clog2(ACC_MODULUS):0] txAccumulator = 0; 
+reg [12:0] txDelayFrames = BAUD_DIVISOR;
 
 assign uart_tx = txPinRegister;
 
@@ -197,13 +200,21 @@ always @(posedge clk) begin
         end
         TX_STATE_START_BIT: begin
             txPinRegister <= 0; // move line low to signal start of transmission (start bit)
-            if ((txCounter + 1) == DELAY_FRAMES) begin // switch to transmit after a delay_frames period
+            if ((txCounter + 1) == txDelayFrames) begin // switch to transmit after a delay_frames period
                 txState <= TX_STATE_WRITE;
                 if (!txEchoMode) begin
                     dataOut <= testMemory[txByteCounter]; // set dataOUt to appropriate byte of memory
                 end // else dataIn in dataOut
                 txBitNumber <= 0;
                 txCounter <= 0;
+                // update accumulator
+                if ((txAccumulator + ACC_INCREMENT) >= ACC_MODULUS) begin
+                    txDelayFrames <= BAUD_DIVISOR + 1;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT - ACC_MODULUS;
+                end else begin
+                    txDelayFrames <= BAUD_DIVISOR;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT;
+                end
             end
             else begin
                 txCounter <= txCounter + 1;
@@ -211,7 +222,7 @@ always @(posedge clk) begin
         end
         TX_STATE_WRITE: begin
             txPinRegister <= dataOut[txBitNumber]; // output appropriate bit of appropriate byte
-            if ((txCounter + 1) == DELAY_FRAMES) begin // another delay frames after start bit state, to wait after the start bit signal
+            if ((txCounter + 1) == txDelayFrames) begin // another delay frames after start bit state, to wait after the start bit signal
                 if (txBitNumber == 3'b111) begin
                     txState <= TX_STATE_PARITY_BIT;
                 end else begin
@@ -219,6 +230,14 @@ always @(posedge clk) begin
                     txBitNumber <= txBitNumber + 1; // write next bit, but only move to this state after delay!
                 end
                 txCounter <=0;
+                // update accumulator
+                if ((txAccumulator + ACC_INCREMENT) >= ACC_MODULUS) begin
+                    txDelayFrames <= BAUD_DIVISOR + 1;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT - ACC_MODULUS;
+                end else begin
+                    txDelayFrames <= BAUD_DIVISOR;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT;
+                end
             end
             else begin
                 txCounter <= txCounter + 1;
@@ -226,9 +245,17 @@ always @(posedge clk) begin
         end
         TX_STATE_PARITY_BIT: begin
             txPinRegister <= ^dataOut ^ PARITY_ODD; // even parity; if uneven 1s this is 1, so adds the one bit to make total even
-            if ((txCounter + 1) == DELAY_FRAMES) begin
+            if ((txCounter + 1) == txDelayFrames) begin
                 txState <= TX_STATE_STOP_BIT;
                 txCounter <= 0;
+                // update accumulator
+                if ((txAccumulator + ACC_INCREMENT) >= ACC_MODULUS) begin
+                    txDelayFrames <= BAUD_DIVISOR + 1;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT - ACC_MODULUS;
+                end else begin
+                    txDelayFrames <= BAUD_DIVISOR;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT;
+                end
             end
             else begin
                 txCounter <= txCounter + 1;
@@ -236,7 +263,7 @@ always @(posedge clk) begin
         end
         TX_STATE_STOP_BIT: begin
             txPinRegister <= 1; // already waited in previous state so can instantly transmit stop bit
-            if ((txCounter + 1) == DELAY_FRAMES) begin
+            if ((txCounter + 1) == txDelayFrames) begin
                 if (txEchoMode) begin
                     txEchoMode <= 0;
                     txState <= TX_STATE_IDLE; // no need to debounce when mirroring
@@ -248,6 +275,14 @@ always @(posedge clk) begin
                     txState <= TX_STATE_START_BIT; // new byte means start from start bit again
                 end
                 txCounter <= 0;
+                // update accumulator
+                if ((txAccumulator + ACC_INCREMENT) >= ACC_MODULUS) begin
+                    txDelayFrames <= BAUD_DIVISOR + 1;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT - ACC_MODULUS;
+                end else begin
+                    txDelayFrames <= BAUD_DIVISOR;
+                    txAccumulator <= txAccumulator + ACC_INCREMENT;
+                end
             end else begin
                 txCounter <= txCounter + 1;
             end
